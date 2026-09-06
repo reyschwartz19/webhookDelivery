@@ -1,0 +1,97 @@
+generator client {
+    provider = "prisma-client"
+    output   = "../generated/prisma"
+    }
+
+    datasource db {
+    provider = "postgresql"
+    }
+
+enum Status {
+    PENDING
+    PROCESSING
+    DELIVERED
+    FAILED
+}
+
+model User {
+    userId         String   @id @default(uuid())
+    email          String   @unique
+    hashedPassword String
+    hashedApiKey   String   @unique
+    createdAt      DateTime @default(now())
+
+    endpoints Endpoint[]
+    events    Event[]
+    sessions  Session[]
+}
+
+model Endpoint {
+    endpointId String    @id @default(uuid())
+    userId     String
+    url        String
+    createdAt  DateTime  @default(now())
+    deletedAt  DateTime?
+    isActive   Boolean   @default(true)
+
+    user       User       @relation(fields: [userId], references: [userId])
+    deliveries Delivery[]
+
+    @@index([userId])
+}
+
+model Event {
+    eventId   String   @id @default(uuid())
+    userId    String
+    eventType String
+    payload   Json
+    createdAt DateTime @default(now())
+
+    user       User       @relation(fields: [userId], references: [userId])
+    deliveries Delivery[]
+
+    @@index([userId])
+    @@index([createdAt])
+}
+
+model Delivery {
+    deliveryId   String   @id @default(uuid())
+    eventId      String
+    endpointId   String
+    status       Status   @default(PENDING)
+    createdAt    DateTime @default(now())
+    attemptCount Int      @default(0)
+    nextAttemptAt DateTime?
+
+    event            Event             @relation(fields: [eventId], references: [eventId])
+    endpoint         Endpoint          @relation(fields: [endpointId], references: [endpointId])
+    deliveryAttempts DeliveryAttempt[]
+
+    @@index([eventId])
+    @@index([endpointId])
+    @@index([status, nextAttemptAt])
+}
+
+model DeliveryAttempt {
+    attemptId  String   @id @default(uuid())
+    deliveryId String
+    statusCode Int?
+    error      String?
+    attemptedAt DateTime @default(now())
+
+    delivery Delivery @relation(fields: [deliveryId], references: [deliveryId])
+
+    @@index([deliveryId])
+}
+
+model Session {
+    sessionId String   @id @default(uuid())
+    userId    String
+    tokenHash String   @unique
+    createdAt DateTime @default(now())
+    expiresAt DateTime
+
+    user User @relation(fields: [userId], references: [userId])
+
+    @@index([userId])
+}

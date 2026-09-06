@@ -1,0 +1,37 @@
+services:
+  webhook-delivery:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      webhook-delivery-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  webhook-delivery-db:
+    image: postgres:15
+    ports:
+      - "5433:5432"
+
+    environment:
+      POSTGRES_USER: username123
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: webhook_delivery
+
+    volumes:
+      - webhook-delivery-db-data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+    command: postgres -c shared_preload_libraries=pg_stat_statements
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U username123 -d webhook_delivery"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  webhook-delivery-db-data:
