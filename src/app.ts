@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors"
 import authRouter from "./modules/auth/auth.route";
+import { errorHandler } from "./middleware/errorMiddleware";
 
 
 const app = express();
@@ -22,5 +23,7 @@ app.use("/api/auth", authRouter)
 app.get("/", (req, res) => {
   res.json({ message: "Hello from my-app" });
 });
+
+app.use(errorHandler);
 
 export default app;
