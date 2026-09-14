@@ -1,8 +1,9 @@
 import prisma from "../../lib/prisma";
 import bcrypt from "bcrypt"
-import { RegisterInput } from "../../types/auth.types";
-import { ConflictError } from "../../AppError";
+import { LoginInput, RegisterInput } from "../../types/auth.types";
+import { ConflictError, UnauthorizedError } from "../../AppError";
 import crypto from "crypto"
+import { saveRefreshToken, signAccessToken, signRefreshToken, revokeRefreshToken } from "../token/token.service";
 
 const SALT_ROUNDS = 10;
 
@@ -42,4 +43,32 @@ export const registerUser = async (input: RegisterInput) => {
         email: newUser.email,
         apiKey
     }
+}
+
+export const loginUser = async (input: LoginInput) => {
+    const {email,password} = input
+
+    const user = await prisma.user.findUnique({
+        where: {email: input.email}
+    })
+    if(!user){
+        throw new UnauthorizedError("Invalid credentials")
+    }
+    const passwordMatch = await bcrypt.compare(password, user.hashedPassword)
+    if(!passwordMatch){
+        throw new UnauthorizedError("Invalid credentials")
+    }
+
+    const accessToken = signAccessToken(user.userId)
+    const refreshToken = signRefreshToken(user.userId)
+    await saveRefreshToken(user.userId, refreshToken)
+
+    return {
+        accessToken,
+        refreshToken
+    }
+}
+
+export const logoutUser = async (UserId: string, refreshToken: string) => {
+   await revokeRefreshToken(UserId, refreshToken);
 }
