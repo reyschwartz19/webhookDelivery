@@ -1,9 +1,9 @@
-import prisma from "../../lib/prisma";
+import prisma from "../../lib/prisma.js";
 import bcrypt from "bcrypt"
-import { LoginInput, RegisterInput } from "../../types/auth.types";
-import { ConflictError, UnauthorizedError } from "../../AppError";
+import { LoginInput, RegisterInput } from "../../types/auth.types.js";
+import { ConflictError, UnauthorizedError } from "../../AppError.js";
 import crypto from "crypto"
-import { saveRefreshToken, signAccessToken, signRefreshToken, revokeRefreshToken } from "../token/token.service";
+import { saveRefreshToken, signAccessToken, signRefreshToken, revokeRefreshToken } from "../token/token.service.js";
 
 const SALT_ROUNDS = 10;
 

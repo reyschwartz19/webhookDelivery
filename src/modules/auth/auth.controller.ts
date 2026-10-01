@@ -1,9 +1,9 @@
 import { Response, Request } from "express";
-import { catchAsync } from "../../utils/catchAsync";
-import { loginUser, logoutUser, registerUser } from "./auth.service";
-import { loginSchema, registerSchema } from "../../schema/authInput.schema";
-import { UnauthorizedError } from "../../AppError";
-import { rotateRefreshToken } from "../token/token.service";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { loginUser, logoutUser, registerUser } from "./auth.service.js";
+import { loginSchema, registerSchema } from "../../schema/authInput.schema.js";
+import { UnauthorizedError } from "../../AppError.js";
+import { rotateRefreshToken } from "../token/token.service.js";
 
 export const registerController = catchAsync(async (req: Request, res: Response) =>{
     const input =  registerSchema.parse(req.body);

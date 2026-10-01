@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { UnauthorizedError } from "../AppError";
-import { verifyAccessToken } from "../modules/token/token.service";
+import { UnauthorizedError } from "../AppError.js";
+import { verifyAccessToken } from "../modules/token/token.service.js";
 
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {

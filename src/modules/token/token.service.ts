@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import prisma from "../../lib/prisma";
-import { UnauthorizedError } from "../../AppError";
+import prisma from "../../lib/prisma.js";
+import { UnauthorizedError } from "../../AppError.js";
 import crypto from "node:crypto"
 
 
