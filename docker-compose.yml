@@ -33,5 +33,18 @@ services:
       timeout: 5s
       retries: 5
 
+  webhook-delivery-test-db:
+    image: postgres:15
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: webhook_test
+
+    tmpfs:
+      - /var/lib/postgresql/data
+
+
 volumes:
   webhook-delivery-db-data:
