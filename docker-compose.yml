@@ -45,6 +45,12 @@ services:
     tmpfs:
       - /var/lib/postgresql/data
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d webhook_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 
 volumes:
   webhook-delivery-db-data:
