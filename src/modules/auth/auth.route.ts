@@ -1,3 +1,4 @@
+import { authenticateToken } from "../../middleware/auth.middleware.js";
 import { loginController, logoutController, refreshController, registerController } from "./auth.controller.js";
 import { Router } from "express";
 
@@ -6,6 +7,6 @@ const authRouter = Router();
 authRouter.post("/register", registerController)
 authRouter.post("/login", loginController)
 authRouter.post("/refresh", refreshController)
-authRouter.post("/logout", logoutController)
+authRouter.post("/logout", authenticateToken, logoutController)
 
 export default authRouter;

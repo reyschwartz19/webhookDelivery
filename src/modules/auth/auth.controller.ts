@@ -31,7 +31,7 @@ export const logoutController = catchAsync(async(req: Request, res: Response) =>
         throw new UnauthorizedError("Unauthorized")
     }
 
-    if(!refreshController){
+    if(!refreshToken){
         throw new UnauthorizedError("No refresh Token")
     }
 
