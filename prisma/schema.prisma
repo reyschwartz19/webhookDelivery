@@ -30,6 +30,7 @@ model Endpoint {
     endpointId String    @id @default(uuid())
     userId     String
     url        String
+    subscribedEvents String[] @default([])
     createdAt  DateTime  @default(now())
     deletedAt  DateTime?
     isActive   Boolean   @default(true)
@@ -70,6 +71,7 @@ model Delivery {
     @@index([eventId])
     @@index([endpointId])
     @@index([status, nextAttemptAt])
+    @@unique([eventId, endpointId])
 }
 
 model DeliveryAttempt {

@@ -44,60 +44,73 @@ export const saveRefreshToken = async (userId: string, token: string) => {
     })
 }
 
-export const rotateRefreshToken = async( oldToken: string) => {
-    // const payload = jwt.verify(oldToken, REFRESH_SECRET) as {userId: string}
-    // if (!payload) {
-    //     throw new UnauthorizedError("Invalid refresh token")
-    // }
-    const oldTokenHash =  hashToken(oldToken);
+export const rotateRefreshToken = async (oldToken: string) => {
+    const oldTokenHash = hashToken(oldToken);
 
-   const matchedSession = await prisma.session.findUnique({
-    where: {
-        tokenHash: oldTokenHash
+    let payload: { userId: string };
+
+    try {
+        payload = jwt.verify(oldToken, REFRESH_SECRET) as { userId: string };
+    } catch {
+        throw new UnauthorizedError("Invalid or expired refresh token");
     }
+
+    const matchedSession = await prisma.session.findUnique({
+        where: {
+            tokenHash: oldTokenHash
+        }
     });
 
     if (!matchedSession) {
-    throw new UnauthorizedError("Refresh token not found");
+        throw new UnauthorizedError("Refresh token not found");
     }
 
-    if (matchedSession.expiresAt <= new Date()){
-        await prisma.session.delete({
-            where: {
-                sessionId: matchedSession.sessionId
-            }
-        })
-    throw new UnauthorizedError("Refresh token expired");
+    if (matchedSession.userId !== payload.userId) {
+        throw new UnauthorizedError("Invalid refresh token");
     }
 
-   let payload
-
-   try {
-      payload = jwt.verify(oldToken, REFRESH_SECRET) as {userId: string}
-   } catch {
-    throw new UnauthorizedError("Invalid refresh token")
-   }
-
-   if (payload.userId !== matchedSession.userId) {
-    throw new UnauthorizedError("Invalid refresh token");
-}
-
-   
-    
-    await prisma.session.delete({
-            where: {
-                sessionId: matchedSession.sessionId
-            }
-        })
+    if (matchedSession.expiresAt <= new Date()) {
+        throw new UnauthorizedError("Refresh token expired");
+    }
 
     const newAccessToken = signAccessToken(payload.userId);
-    const newRefreshToken = signRefreshToken(payload.userId)
-    await saveRefreshToken(payload.userId, newRefreshToken);
+    const newRefreshToken = signRefreshToken(payload.userId);
 
-   
-    return {accessToken: newAccessToken, refreshToken: newRefreshToken};
-    
-}
+    await prisma.$transaction(async (tx) => {
+        // Atomically consume the old session
+        const result = await tx.session.deleteMany({
+            where: {
+                sessionId: matchedSession.sessionId,
+                tokenHash: oldTokenHash,
+                expiresAt: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if (result.count !== 1) {
+            throw new UnauthorizedError(
+                "Refresh token already used or expired"
+            );
+        }
+
+        // Create the replacement session
+        await tx.session.create({
+            data: {
+                userId: payload.userId,
+                tokenHash: hashToken(newRefreshToken),
+                expiresAt: new Date(
+                    Date.now() + 7 * 24 * 60 * 60 * 1000
+                )
+            }
+        });
+    });
+
+    return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken
+    };
+};
 
 export const revokeRefreshToken = async (userId: string, token: string) => {
      const tokenHash =  hashToken(token);
