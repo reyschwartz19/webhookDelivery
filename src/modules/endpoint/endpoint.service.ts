@@ -1,7 +1,6 @@
 import { ConflictError } from "../../AppError.js";
 import prisma from "../../lib/prisma.js";
 import { Prisma } from "../../../generated/prisma/client.js";
-import { createEndpointSchema } from "../../schema/endpointInput.schema.js";
 
 export const createEndpoint = async (
     url: string,

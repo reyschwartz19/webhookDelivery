@@ -3,10 +3,10 @@ import prisma from "../../src/lib/prisma";
 import { registerUser,loginUser,logoutUser } from "../../src/modules/auth/auth.service";
 import crypto from "crypto"
 import bcrypt from "bcrypt"
+import { cleanDatabase } from "../helpers/database";
 
 beforeEach(async()=>{
-    await prisma.session.deleteMany();
-    await prisma.user.deleteMany();
+    await cleanDatabase();
 })
 
 describe("register user intergration", ()=>{

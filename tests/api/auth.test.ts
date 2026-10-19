@@ -1,13 +1,12 @@
 import {beforeEach, describe, expect, it} from 'vitest';
 import request from "supertest"
 import app from "../../src/app.js"
-import prisma from "../../src/lib/prisma.js"
+import { cleanDatabase } from '../helpers/database.js';
 
 
 
 beforeEach(async() => {
-    await prisma.session.deleteMany();
-    await prisma.user.deleteMany();
+    await cleanDatabase();
 });
 
 const registerTestUser = async () => {
