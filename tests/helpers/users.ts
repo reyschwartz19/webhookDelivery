@@ -15,11 +15,13 @@ export const createTestUser = async () => {
     });
 };
 
-export const createAuthenticatedUser = async () => {
-    const email = "test@example.com";
+export const createAuthenticatedUser = async (
+    email = "test@example.com"
+) => {
     const password = "password123";
+  
 
-    await request(app)
+    const registration = await request(app)
         .post("/api/auth/register")
         .send({ email, password })
         .expect(201);
@@ -30,6 +32,7 @@ export const createAuthenticatedUser = async () => {
         .expect(200);
 
     return {
-        accessToken: response.body.accessToken
+        accessToken: response.body.accessToken,
+        userId: registration.body.user.id
     };
 };
