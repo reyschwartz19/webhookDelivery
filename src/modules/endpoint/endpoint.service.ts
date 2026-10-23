@@ -64,15 +64,71 @@ export const editEndpoint = async (
         isActive: updatedEndpoint.isActive
     }
     } catch(error: unknown){
-        if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2025"
-    ) {
-        throw new NotFoundError("Endpoint not found");
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if(error.code === "P2025"){
+            throw new NotFoundError("Endoint not found")
+        }
+
+        if(error.code === "P2002") {
+            throw new ConflictError("Endpoint URL already registered")
+        }
     }
 
     throw error;
     }
+}
+
+export const addEndpointSubscribedEvent = async (
+    userId: string,
+    endpointId: string,
+    newSubscribedEvent: string
+) =>{
+   
+    const result = await prisma.endpoint.updateMany({
+        where: {
+            endpointId,
+            userId,
+            deletedAt: null,
+            NOT: {
+                subscribedEvents: {
+                    has: newSubscribedEvent
+                }
+            }
+        },
+        data: {
+            subscribedEvents: {
+                push: newSubscribedEvent
+            }
+        }
+    })
+
+    if(result.count === 0 ){
+        const endpoint = await prisma.endpoint.findUnique({
+        where: {
+            userId,
+            endpointId,
+            deletedAt: null
+        }
+        })
+
+        if(!endpoint) {
+            throw new NotFoundError("Endpoint not found")
+        }
+
+        throw new ConflictError("Event already subscribed")
+    }
+
+    const updatedEndpoint = await prisma.endpoint.findUnique({
+        where: {
+            endpointId
+        }
+    });
+
+    return {
+        subscribedEvents: updatedEndpoint!.subscribedEvents
+    }
+
+    
 }
 
 export const deleteEndpoint = async (
@@ -80,7 +136,7 @@ export const deleteEndpoint = async (
     endpointId: string,
 ) => {
     try {
-        const updateEndpoint = await prisma.endpoint.update({
+       await prisma.endpoint.update({
             where: {
                 userId,
                 endpointId,
