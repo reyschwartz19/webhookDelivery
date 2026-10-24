@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import prisma from "../../src/lib/prisma";
 import { cleanDatabase } from "../helpers/database";
 import { createTestUser } from "../helpers/users";
-import {addEndpointSubscribedEvent, createEndpoint,editEndpoint} from "../../src/modules/endpoint/endpoint.service"
+import {addEndpointSubscribedEvent, createEndpoint,editEndpoint, getAllEndpoints, getEndpointById} from "../../src/modules/endpoint/endpoint.service"
 import { ConflictError, NotFoundError } from "../../src/AppError";
 
 
@@ -421,3 +421,135 @@ describe("adding subscibedEvent to Endpoint", ()=>{
     })
 })
 
+describe("Get all endpoints integration", () => {
+    it("returns all non-deleted endpoints belonging to a user", async () => {
+        const user = await createTestUser();
+
+        await createEndpoint(
+            "https://example.com/hook1",
+            ["payment.completed"],
+            user.userId
+        );
+
+        await createEndpoint(
+            "https://example.com/hook2",
+            ["order.created"],
+            user.userId
+        );
+
+        const result = await getAllEndpoints(user.userId);
+
+        expect(result).toHaveLength(2);
+        expect(result.map(e => e.url)).toEqual(
+            expect.arrayContaining([
+                "https://example.com/hook1",
+                "https://example.com/hook2"
+            ])
+        );
+    });
+
+    it("returns an empty array if user has no endpoints", async () => {
+        const user = await createTestUser();
+
+        const result = await getAllEndpoints(user.userId);
+
+        expect(result).toEqual([]);
+    });
+
+    it("does not return another user's endpoints", async () => {
+        const user1 = await createTestUser();
+        const user2 = await createTestUser();
+
+        await createEndpoint(
+            "https://example.com/hook",
+            ["payment.completed"],
+            user1.userId
+        );
+
+        const result = await getAllEndpoints(user2.userId);
+
+        expect(result).toEqual([]);
+    });
+
+    it("excludes soft-deleted endpoints", async () => {
+        const user = await createTestUser();
+
+        const endpoint = await createEndpoint(
+            "https://example.com/hook",
+            ["payment.completed"],
+            user.userId
+        );
+
+        await prisma.endpoint.update({
+            where: { endpointId: endpoint.id },
+            data: { deletedAt: new Date(), isActive: false }
+        });
+
+        const result = await getAllEndpoints(user.userId);
+
+        expect(result).toEqual([]);
+    });
+});
+
+describe("Get endpoint by ID integration", () => {
+    it("returns the requested endpoint", async () => {
+        const user = await createTestUser();
+
+        const created = await createEndpoint(
+            "https://example.com/hook",
+            ["payment.completed"],
+            user.userId
+        );
+
+        const result = await getEndpointById(user.userId, created.id);
+
+        expect(result.endpointId).toBe(created.id);
+        expect(result.url).toBe(created.url);
+        expect(result.subscribedEvents).toEqual(created.events);
+    });
+
+    it("throws NotFoundError for a nonexistent endpoint", async () => {
+        const user = await createTestUser();
+
+        await expect(
+            getEndpointById(
+                user.userId,
+                "550e8400-e29b-41d4-a716-446655440000"
+            )
+        ).rejects.toThrow(NotFoundError);
+    });
+
+    it("throws NotFoundError for another user's endpoint", async () => {
+        const user1 = await createTestUser();
+        const user2 = await createTestUser();
+
+        const endpoint = await createEndpoint(
+            "https://example.com/hook",
+            ["payment.completed"],
+            user1.userId
+        );
+
+        await expect(
+            getEndpointById(user2.userId, endpoint.id)
+        ).rejects.toThrow(NotFoundError);
+    });
+
+    it("throws NotFoundError for a soft-deleted endpoint", async () => {
+        const user = await createTestUser();
+
+        const endpoint = await createEndpoint(
+            "https://example.com/hook",
+            ["payment.completed"],
+            user.userId
+        );
+
+        await prisma.endpoint.update({
+            where: { endpointId: endpoint.id },
+            data: { deletedAt: new Date() }
+        });
+
+        await expect(
+            getEndpointById(user.userId, endpoint.id)
+        ).rejects.toThrow(NotFoundError);
+    });
+});

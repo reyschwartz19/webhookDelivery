@@ -206,3 +206,192 @@ describe("PATCH api/endpoint/editEndpoint/:endpointId", ()=>{
 
 })
 
+describe("POST /api/endpoint/addEndpointEvent", () =>{
+    it("Returns 200 when event is succesfully added", async()=>{
+         const user = await createAuthenticatedUser();
+
+         const endpoint = await createTestEndpoint(user.userId);
+
+         const response = await request(app)
+               .post(`/api/endpoint/addEndpointEvent/${endpoint.id}`)
+               .set("Authorization", `Bearer ${user.accessToken}`)
+               .send(
+                {eventType: "order.created"}
+               )
+        expect(response.status).toBe(200)
+        expect(response.body.newSubscribedEvent.subscribedEvents).toEqual(["payment.completed","order.created"])
+    })
+
+    it("Returns 409 for duplicate events", async()=>{
+        const user = await createAuthenticatedUser();
+
+         const endpoint = await createTestEndpoint(user.userId);
+
+         const response = await request(app)
+               .post(`/api/endpoint/addEndpointEvent/${endpoint.id}`)
+               .set("Authorization", `Bearer ${user.accessToken}`)
+               .send(
+                {eventType: "payment.completed"}
+               )
+         expect(response.status).toBe(409)
+    })
+    
+    it("Retuns 404 for missing endpoint", async()=>{
+        const {accessToken} = await createAuthenticatedUser(); 
+
+        const response = await request(app)
+              .patch(`/api/endpoint/addEndpointEvent/550e8400-e29b-41d4-a716-446655440000`)
+              .set("Authorization", `Bearer ${accessToken}`)
+              .send({
+                eventType: "payment.completed"
+              });
+        expect(response.status).toBe(404)
+    })
+
+    it("Returns 404 for unauthorized endpoint", async()=>{
+        const user1 = await createAuthenticatedUser();
+        const user2 = await createAuthenticatedUser("test2@example.com");
+        const endpoint = await createTestEndpoint(user1.userId) 
+
+        const response = await request(app)
+              .patch(`/api/endpoint/addEndpointEvent/${endpoint.id}`)
+              .set("Authorization", `Bearer ${user2.accessToken}`)
+              .send({
+                eventType: "payment.completed"
+              });
+            
+        expect(response.status).toBe(404)
+        
+
+    })
+})
+
+describe("DELETE /api/endpoint/deleteEndpoint", async()=>{
+    it("Returns 204 upon succesful deletion", async()=>{
+         const user = await createAuthenticatedUser();
+
+         const endpoint = await createTestEndpoint(user.userId);
+
+         const response = await request(app)
+               .delete(`/api/endpoint/deleteEndpoint/${endpoint.id}`)
+               .set("Authorization", `Bearer ${user.accessToken}`)
+        
+         expect(response.status).toBe(204)
+    })
+
+    it("Retuns 404 for missing endpoint", async()=>{
+        const {accessToken} = await createAuthenticatedUser(); 
+
+            const response = await request(app)
+                .delete(`/api/endpoint/deleteEndpoint/550e8400-e29b-41d4-a716-446655440000`)
+                .set("Authorization", `Bearer ${accessToken}`)
+        expect(response.status).toBe(404)
+    })
+
+    it("Returns 404 for unauthorized endpoint", async()=>{
+        const user1 = await createAuthenticatedUser();
+        const user2 = await createAuthenticatedUser("test2@example.com");
+        const endpoint = await createTestEndpoint(user1.userId) 
+
+            const response = await request(app)
+                .delete(`/api/endpoint/deleteEndpoint/${endpoint.id}`)
+                .set("Authorization", `Bearer ${user2.accessToken}`)
+            
+        expect(response.status).toBe(404)
+        
+
+    })
+})
+
+
+describe("GET /api/endpoint", () => {
+    it("returns 200 and the user's endpoints", async () => {
+        const user = await createAuthenticatedUser();
+        const endpoint = await createTestEndpoint(user.userId);
+
+        const response = await request(app)
+            .get("/api/endpoint")
+            .set("Authorization", `Bearer ${user.accessToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.endpoints).toHaveLength(1);
+        expect(response.body.endpoints[0].endpointId).toBe(endpoint.id);
+    });
+
+    it("returns 200 with an empty array", async () => {
+        const user = await createAuthenticatedUser();
+
+        const response = await request(app)
+            .get("/api/endpoint")
+            .set("Authorization", `Bearer ${user.accessToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.endpoints).toEqual([]);
+    });
+
+    it("returns 401 without authentication", async () => {
+        const response = await request(app)
+            .get("/api/endpoint");
+
+        expect(response.status).toBe(401);
+    });
+});
+
+describe("GET /api/endpoint/:endpointId", () => {
+    it("returns 200 and the requested endpoint", async () => {
+        const user = await createAuthenticatedUser();
+        const endpoint = await createTestEndpoint(user.userId);
+
+        const response = await request(app)
+            .get(`/api/endpoint/${endpoint.id}`)
+            .set("Authorization", `Bearer ${user.accessToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.endpoint.endpointId).toBe(endpoint.id);
+        expect(response.body.endpoint.url).toBe(endpoint.url);
+    });
+
+    it("returns 404 for a nonexistent endpoint", async () => {
+        const user = await createAuthenticatedUser();
+
+        const response = await request(app)
+            .get(
+                "/api/endpoint/550e8400-e29b-41d4-a716-446655440000"
+            )
+            .set("Authorization", `Bearer ${user.accessToken}`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("returns 404 for another user's endpoint", async () => {
+        const user1 = await createAuthenticatedUser();
+        const user2 = await createAuthenticatedUser("test2@example.com");
+
+        const endpoint = await createTestEndpoint(user1.userId);
+
+        const response = await request(app)
+            .get(`/api/endpoint/${endpoint.id}`)
+            .set("Authorization", `Bearer ${user2.accessToken}`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("returns 400 for an invalid endpoint ID", async () => {
+        const user = await createAuthenticatedUser();
+
+        const response = await request(app)
+            .get("/api/endpoint/not-a-uuid")
+            .set("Authorization", `Bearer ${user.accessToken}`);
+
+        expect(response.status).toBe(400);
+    });
+
+    it("returns 401 without authentication", async () => {
+        const response = await request(app)
+            .get(
+                "/api/endpoint/550e8400-e29b-41d4-a716-446655440000"
+            );
+
+        expect(response.status).toBe(401);
+    });
+});

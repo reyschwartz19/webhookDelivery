@@ -25,3 +25,7 @@ export const updateEndpointSchema = z.object({
   data => Object.keys(data).length > 0,
   { message: "Provide at least one field to update" }
 );
+
+export const addEndpointEventSchema = z.object({
+    eventType: z.string().trim().min(1, "Event name is required")
+});

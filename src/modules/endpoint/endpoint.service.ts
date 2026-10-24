@@ -37,6 +37,55 @@ export const createEndpoint = async (
 
 }
 
+
+export const getAllEndpoints = async (userId: string) => {
+    const endpoints = await prisma.endpoint.findMany({
+        where: {
+            userId,
+            deletedAt: null
+        },
+        select: {
+            endpointId: true,
+            url: true,
+            subscribedEvents: true,
+            isActive: true,
+            createdAt: true
+        },
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
+
+    return endpoints;
+};
+
+export const getEndpointById = async (
+    userId: string,
+    endpointId: string
+) => {
+    const endpoint = await prisma.endpoint.findFirst({
+        where: {
+            endpointId,
+            userId,
+            deletedAt: null
+        },
+        select: {
+            endpointId: true,
+            url: true,
+            subscribedEvents: true,
+            isActive: true,
+            createdAt: true
+        }
+    });
+
+    if (!endpoint) {
+        throw new NotFoundError("Endpoint not found");
+    }
+
+    return endpoint;
+};
+
+
 type UpdateEndpointInput = z.infer<typeof updateEndpointSchema>;
 
 export const editEndpoint = async (
