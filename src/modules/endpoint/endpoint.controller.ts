@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync.js";
 import { createEndpoint, editEndpoint, deleteEndpoint, addEndpointSubscribedEvent, getAllEndpoints, getEndpointById } from "./endpoint.service.js";
 import { BadRequestError } from "../../AppError.js";
-import { addEndpointEventSchema, createEndpointSchema, updateEndpointSchema, } from "../../schema/endpointInput.schema.js";
+import { addEndpointEventSchema, createEndpointSchema, updateEndpointSchema, } from "./endpoint.schema.js";
 import z from "zod";
 
 export const createEndpointController = catchAsync(async(req: Request, res: Response)=>{

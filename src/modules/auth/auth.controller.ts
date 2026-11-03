@@ -1,7 +1,7 @@
 import { Response, Request } from "express";
 import { catchAsync } from "../../utils/catchAsync.js";
 import { loginUser, logoutUser, registerUser } from "./auth.service.js";
-import { loginSchema, registerSchema } from "../../schema/authInput.schema.js";
+import { loginSchema, registerSchema } from "./auth.schema.js";
 import { UnauthorizedError } from "../../AppError.js";
 import { rotateRefreshToken } from "../token/token.service.js";
 

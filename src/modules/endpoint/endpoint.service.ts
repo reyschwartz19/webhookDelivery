@@ -2,7 +2,7 @@ import { ConflictError, NotFoundError } from "../../AppError.js";
 import prisma from "../../lib/prisma.js";
 import { Prisma } from "../../../generated/prisma/client.js";
 import { z } from "zod";
-import { updateEndpointSchema } from "../../schema/endpointInput.schema.js";
+import { updateEndpointSchema } from "./endpoint.schema.js";
 
 export const createEndpoint = async (
     url: string,
