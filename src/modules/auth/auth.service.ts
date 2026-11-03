@@ -11,7 +11,7 @@ const createApiKey = () => {
     return `whk_${crypto.randomBytes(32).toString("hex")}`
 }
 
-const hashApiKey = (apiKey: string) => {
+export const hashApiKey = (apiKey: string) => {
     return crypto
         .createHash("sha256")
         .update(apiKey)

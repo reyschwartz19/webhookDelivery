@@ -4,7 +4,7 @@ import authRouter from "./modules/auth/auth.route.js";
 import { errorHandler } from "./middleware/errorMiddleware.js";
 import cookieParser from "cookie-parser"
 import endpointRouter from "./modules/endpoint/endpoint.route.js";
-
+import eventRouter from "./modules/events/events.route.js";
 
 const app = express();
 
@@ -23,6 +23,7 @@ app.use(cookieParser())
 
 app.use("/api/auth", authRouter)
 app.use("/api/endpoint", endpointRouter)
+app.use("/api", eventRouter)
 
 app.get("/", (req, res) => {
   res.json({ message: "Hello from my-app" });
