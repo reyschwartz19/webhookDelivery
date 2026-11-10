@@ -8,6 +8,6 @@ export const publishEventController = async (
 ) => {
     const userId = req.user!.userId
     const input = publishEventSchema.parse(req.body)
-    const result = publishEvent(userId, input)
+    const result =await publishEvent(userId, input)
     res.status(201).json(result)
 }

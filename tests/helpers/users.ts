@@ -2,17 +2,26 @@ import { randomUUID } from "crypto";
 import prisma from "../../src/lib/prisma.js";
 import request from "supertest"
 import app from "../../src/app.js";
+import { createApiKey, hashApiKey } from "../../src/modules/auth/auth.service.js";
 
 export const createTestUser = async () => {
     const id = randomUUID();
+    const apiKey = createApiKey();
+    const hashedApiKey = hashApiKey(apiKey)
 
-    return prisma.user.create({
+
+    const user = await prisma.user.create({
         data: {
             email: `test-${id}@example.com`,
             hashedPassword: "test-password-hash",
-            hashedApiKey: `test-api-key-hash-${id}`
+            hashedApiKey
         }
     });
+
+    return{
+        ...user,
+        apiKey
+    }
 };
 
 export const createAuthenticatedUser = async (

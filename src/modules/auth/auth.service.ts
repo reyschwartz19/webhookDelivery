@@ -7,7 +7,7 @@ import { saveRefreshToken, signAccessToken, signRefreshToken, revokeRefreshToken
 
 const SALT_ROUNDS = 10;
 
-const createApiKey = () => {
+export const createApiKey = () => {
     return `whk_${crypto.randomBytes(32).toString("hex")}`
 }
 
