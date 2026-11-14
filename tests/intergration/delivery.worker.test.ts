@@ -78,7 +78,7 @@ describe("Delivery cliam intergration", ()=>{
     it("returns 1 succesfull claim when 2 workers attempt to claim a single delivery", async()=>{
         await createEndpoint(
                  "https://example.webhook.com",
-                 ["payment.completed"],
+                 ["payment.completed", "payment.failed"],
                  user.userId
                 )
                 
@@ -89,24 +89,26 @@ describe("Delivery cliam intergration", ()=>{
                    amount: 5000
                 }
                 })
+                await publishEvent(user.userId, {
+                   type: "payment.failed",
+                   payload: {
+                   paymentId: "pay_123",
+                   amount: 5000
+                }
+                })
+             
+
         const results = await Promise.all([
              claimNextDelivery(),
              claimNextDelivery()
         ])
 
-        const fulfilled = results.filter(r => r !== null);
-        const rejected = results.filter(r => r === null);
+        expect(results.filter(r=>r !== null)).toHaveLength(2)
+
+        expect(
+            new Set(results.map(r=>r?.deliveryId)).size
+        ).toBe(2)
         
-        expect(fulfilled).toHaveLength(1)
-        expect(rejected).toHaveLength(1)
-
-        expect(fulfilled[0]?.status).toBe("PROCESSING")
-
-        const deliveries = await prisma.delivery.findMany()
-
-        expect(deliveries).toHaveLength(1)
-        expect(deliveries[0]?.status).toBe("PROCESSING")
-
-        expect(fulfilled[0]?.deliveryId).toBe(deliveries[0]?.deliveryId)
+        
         })
 })

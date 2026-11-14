@@ -3,7 +3,8 @@ import prisma from "../lib/prisma.js"
 
 export const claimNextDelivery = async()=>{
 
-    const now = new Date()
+    for(let attempt =0; attempt< 3; attempt++){
+        const now = new Date()
     const delivery = await prisma.delivery.findFirst({
         where: {
             status: "PENDING",
@@ -32,11 +33,14 @@ export const claimNextDelivery = async()=>{
         }
     })
     if(claimed.count === 0){
-        return null
+        continue
     }
     return await prisma.delivery.findUnique({
         where: {
            deliveryId: delivery.deliveryId
         }
     })
+    }
+
+    return null
 }
