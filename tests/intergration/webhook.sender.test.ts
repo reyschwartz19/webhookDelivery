@@ -19,9 +19,7 @@ const fetchMock = vi.spyOn(globalThis, "fetch")
 
 
 
-// fetchMock.mockRejectedValue(
-//     new Error("Connection refused")
-// )
+
 
 describe("delivery http request intergration", ()=>{
     it("Returns success body after request", async()=>{
@@ -69,5 +67,69 @@ describe("delivery http request intergration", ()=>{
          expect(body.id).toEqual(expect.any(String))
 
     })
-
+    it("Returns false when encounters an internal error", async()=>{
+         fetchMock.mockResolvedValue({
+         ok: false,
+         status: 500
+         }as Response) 
+        
+        await createEndpoint(
+                         "https://example.webhook.com",
+                         ["payment.completed"],
+                         user.userId
+                        )
+                        
+         await publishEvent(user.userId, {
+                           type: "payment.completed",
+                           payload: {
+                           paymentId: "pay_123",
+                           amount: 5000
+                        }
+                        })
+                        
+         const claimedDelivery = await claimNextDelivery()
+         expect(claimedDelivery).not.toBeNull()
+         const result = await sendWebhook(claimedDelivery!.deliveryId)
+         expect(fetchMock).toHaveBeenCalledWith(
+            "https://example.webhook.com",
+            expect.objectContaining({
+                method: "POST"
+            })
+         )
+         expect(result.success).toBe(false)
+         expect(result.statusCode).toBe(500)
+         expect(result.error).toBeNull()
+    })
+    it("Returns a failure when server is unreachable", async()=>{
+         fetchMock.mockRejectedValue(
+        new Error("Connection refused")
+        ) 
+        
+        await createEndpoint(
+                         "https://example.webhook.com",
+                         ["payment.completed"],
+                         user.userId
+                        )
+                        
+         await publishEvent(user.userId, {
+                           type: "payment.completed",
+                           payload: {
+                           paymentId: "pay_123",
+                           amount: 5000
+                        }
+                        })
+                        
+         const claimedDelivery = await claimNextDelivery()
+         expect(claimedDelivery).not.toBeNull()
+         const result = await sendWebhook(claimedDelivery!.deliveryId)
+         expect(fetchMock).toHaveBeenCalledWith(
+            "https://example.webhook.com",
+            expect.objectContaining({
+                method: "POST"
+            })
+         )
+         expect(result.success).toBe(false)
+         expect(result.statusCode).toBeNull()
+         expect(result.error).toBe("Connection refused")
+    })
 })
